@@ -1,0 +1,120 @@
+import tkinter as tk
+from tkinter import messagebox
+import mysql.connector
+
+conn = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="azerty",
+    database="store"
+)
+cursor = conn.cursor()
+
+class StockManagementApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Gestion des Stocks")
+
+        self.product_listbox = tk.Listbox(root, selectmode=tk.SINGLE, height=10)
+        self.product_listbox.pack(pady=5, expand=True, fill=tk.BOTH)
+        self.product_listbox.bind('<<ListboxSelect>>', self.show_product_details)
+        self.refresh_product_list()
+
+        tk.Label(root, text="Nom du produit:").pack(pady=5)
+        tk.Label(root, text="Description du produit:").pack(pady=5)
+        tk.Label(root, text="Prix du produit:").pack(pady=5)
+        tk.Label(root, text="Quantité en stock:").pack(pady=5)
+
+        self.name_entry = tk.Entry(root)
+        self.name_entry.pack(pady=5, padx=5)
+        self.description_entry = tk.Entry(root)
+        self.description_entry.pack(pady=5, padx=5)
+        self.price_entry = tk.Entry(root)
+        self.price_entry.pack(pady=5, padx=5)
+        self.quantity_entry = tk.Entry(root)
+        self.quantity_entry.pack(pady=5, padx=5)
+
+        add_button = tk.Button(root, text="Ajouter Product", command=self.add_product)
+        add_button.pack(pady=5)
+
+        delete_button = tk.Button(root, text="Supprimer Product", command=self.delete_product)
+        delete_button.pack(pady=5)
+
+        edit_button = tk.Button(root, text="Modifier Product", command=self.edit_product)
+        edit_button.pack(pady=5)
+
+        self.product_details_text = tk.Text(root, height=5, width=30)
+        self.product_details_text.pack(pady=10)
+def refresh_product_list(self):
+        self.product_listbox.delete(0, tk.END)
+        cursor.execute("SELECT * FROM product")
+        products = cursor.fetchall()
+        for product in products:
+            self.product_listbox.insert(tk.END, f"ID: {product[0]} - Nom: {product[1]} - Description: {product[2]} - Prix: {product[3]} - Quantité: {product[4]} - ID Category: {product[5]}")
+
+    def add_product(self):
+        name = self.name_entry.get()
+        description = self.description_entry.get()
+        price = self.price_entry.get()
+        quantity = self.quantity_entry.get()
+        id_category = 1  
+
+        if name and price and quantity:
+            cursor.execute("INSERT INTO product (name, description, price, quantity, id_category) VALUES (%s, %s, %s, %s, %s)",
+                           (name, description, price, quantity, id_category))
+            conn.commit()
+            self.refresh_product_list()
+        else:
+            messagebox.showwarning("Avertissement", "Veuillez remplir tous les champs.")
+
+    def delete_product(self):
+        selected_index = self.product_listbox.curselection()
+        if selected_index:
+            selected_product_id = selected_index[0] + 1  
+            cursor.execute(f"DELETE FROM product WHERE id={selected_product_id}")
+            conn.commit()
+            self.refresh_product_list()
+        else:
+            messagebox.showwarning("Avertissement", "Veuillez sélectionner un produit à supprimer.")
+
+    def edit_product(self):
+        selected_index = self.product_listbox.curselection()
+        if selected_index:
+            selected_product_id = selected_index[0] + 1
+
+            cursor.execute("SELECT * FROM product WHERE id = %s", (selected_product_id,))
+            current_product = cursor.fetchone()
+
+            new_name = self.name_entry.get()
+            new_description = self.description_entry.get()
+            new_price = self.price_entry.get()
+            new_quantity = self.quantity_entry.get()
+
+            if new_name and new_price and new_quantity:
+                cursor.execute("UPDATE product SET name=%s, description=%s, price=%s, quantity=%s WHERE id=%s",
+                               (new_name, new_description, new_price, new_quantity, selected_product_id))
+                conn.commit()
+                self.refresh_product_list()
+            else:
+                messagebox.showwarning("Avertissement", "Veuillez remplir tous les champs.")
+        else:
+            messagebox.showwarning("Avertissement", "Veuillez sélectionner un produit à modifier.")
+
+    def show_product_details(self, event):
+        selected_index = self.product_listbox.curselection()
+        if selected_index:
+            selected_product_id = selected_index[0] + 1
+
+            cursor.execute("SELECT * FROM product WHERE id = %s", (selected_product_id,))
+            current_product = cursor.fetchone()
+
+            details_text = f"ID: {current_product[0]}\nNom: {current_product[1]}\nDescription: {current_product[2]}\nPrix: {current_product[3]}\nQuantité: {current_product[4]}\nID Category: {current_product[5]}"
+            self.product_details_text.delete(1.0, tk.END)
+            self.product_details_text.insert(tk.END, details_text)
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = StockManagementApp(root)
+    root.mainloop()
+
+conn.close()
